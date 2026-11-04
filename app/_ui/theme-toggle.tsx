@@ -12,10 +12,13 @@ const OPTIONS: [Theme, string, string][] = [
 function apply(theme: Theme) {
   const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
   document.documentElement.classList.toggle("dark", dark);
+  return dark;
 }
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>("system");
+  // What "System" is following right now, so it never looks like it does nothing
+  const [osDark, setOsDark] = useState(false);
 
   useEffect(() => {
     let saved: Theme = "system";
@@ -28,9 +31,12 @@ export default function ThemeToggle() {
   // In system mode, follow the OS when it switches
   useEffect(() => {
     apply(theme);
-    if (theme !== "system") return;
     const mq = matchMedia("(prefers-color-scheme: dark)");
-    const on = () => apply("system");
+    setOsDark(mq.matches);
+    const on = () => {
+      setOsDark(mq.matches);
+      if (theme === "system") apply("system");
+    };
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   }, [theme]);
@@ -49,14 +55,17 @@ export default function ThemeToggle() {
           key={value}
           role="radio"
           aria-checked={theme === value}
-          title={label}
+          title={value === "system" ? `Follow your computer's setting (now ${osDark ? "dark" : "light"})` : label}
           onClick={() => pick(value)}
           className={`flex h-7 items-center gap-1.5 rounded-full px-2.5 text-xs ${theme === value ? "bg-ink text-face" : "text-ink/70 hover:text-ink"}`}
         >
           <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d={d} />
           </svg>
-          <span className="hidden sm:inline">{label}</span>
+          <span className="hidden sm:inline">
+            {label}
+            {value === "system" && <span className="opacity-70"> ({osDark ? "dark" : "light"})</span>}
+          </span>
         </button>
       ))}
     </div>
