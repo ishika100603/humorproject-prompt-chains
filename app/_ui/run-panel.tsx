@@ -16,7 +16,7 @@ export default function RunPanel({ chainId, stepCount, images }: { chainId: numb
   const [busy, setBusy] = useState(false);
   const [current, setCurrent] = useState(0);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<{ outputs: Output[]; captions: string[]; published: number } | null>(null);
+  const [result, setResult] = useState<{ outputs: Output[]; captions: string[]; published: number; wanted?: boolean; publishError?: string | null } | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -70,13 +70,13 @@ export default function RunPanel({ chainId, stepCount, images }: { chainId: numb
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
           body: JSON.stringify({ chain_id: chainId, image_url: picked, publish, step_index: i, previous, request_id: requestId }),
         });
-        const json: { error?: string; request_id?: number; outputs?: Output[]; captions?: string[]; published?: number } = await res.json().catch(() => ({ error: `The caption app answered ${res.status}.` }));
+        const json: { error?: string; request_id?: number; outputs?: Output[]; captions?: string[]; published?: number; publish_requested?: boolean; publish_error?: string | null } = await res.json().catch(() => ({ error: `The caption app answered ${res.status}.` }));
         requestId = json.request_id ?? requestId;
         if (json.outputs?.length) {
           outputs.push(...json.outputs);
           previous = json.outputs[json.outputs.length - 1].output;
         }
-        setResult({ outputs: [...outputs], captions: json.captions ?? [], published: json.published ?? 0 });
+        setResult({ outputs: [...outputs], captions: json.captions ?? [], published: json.published ?? 0, wanted: json.publish_requested, publishError: json.publish_error });
         if (!res.ok) throw new Error(json.error || "The run failed.");
       }
       router.refresh();
@@ -152,8 +152,13 @@ export default function RunPanel({ chainId, stepCount, images }: { chainId: numb
             <div className="rounded-md border border-navy/40 p-3">
               <p className="text-xs text-ink/60">
                 {result.captions.length} caption{result.captions.length === 1 ? "" : "s"}
-                {result.published ? ` · posted ${result.published} to the app` : " · saved here only"}
+                {result.published
+                  ? ` · posted ${result.published} to the public app`
+                  : result.wanted
+                    ? " · couldn't post to the public app"
+                    : " · saved here only (tick the box to post them)"}
               </p>
+              {result.publishError && <p className="mt-1 text-xs text-brick">Why: {result.publishError}</p>}
               <ul className="mt-1 grid gap-1">
                 {result.captions.map((c, i) => (
                   <li key={i} className="text-sm">
