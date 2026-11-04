@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { CAPTION_APP_URL } from "@/lib/supabase/config";
@@ -14,20 +14,13 @@ export default function RunPanel({ chainId, stepCount, images }: { chainId: numb
   const [picked, setPicked] = useState<string | null>(images[0]?.url ?? null);
   const [publish, setPublish] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [tick, setTick] = useState(0);
+  const [current, setCurrent] = useState(0);
   const [error, setError] = useState("");
   const [result, setResult] = useState<{ outputs: Output[]; captions: string[]; published: number } | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // A rough "which step is running" while waiting (the API answers once, at the end)
-  useEffect(() => {
-    if (!busy) return;
-    setTick(0);
-    const t = setInterval(() => setTick((n) => n + 1), 1000);
-    return () => clearInterval(t);
-  }, [busy]);
-  const runningStep = Math.min(stepCount, 1 + Math.floor(tick / 6));
+  const runningStep = current + 1;
 
   const upload = async (file: File | undefined) => {
     if (!file) return;
@@ -56,24 +49,36 @@ export default function RunPanel({ chainId, stepCount, images }: { chainId: numb
     setUploading(false);
   };
 
+  // One request per step: each step gets the full time limit, and its output shows right away
   const run = async () => {
     if (!picked) return setError("Pick a photo first.");
     setBusy(true);
     setError("");
-    setResult(null);
+    const outputs: Output[] = [];
+    setResult({ outputs, captions: [], published: 0 });
     try {
       const {
         data: { session },
       } = await createClient().auth.getSession();
       if (!session) throw new Error("Your session expired. Sign in again.");
-      const res = await fetch(`${CAPTION_APP_URL}/api/chain-run`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ chain_id: chainId, image_url: picked, publish }),
-      });
-      const json = await res.json().catch(() => ({ error: `The caption app answered ${res.status}.` }));
-      if (json.outputs?.length) setResult({ outputs: json.outputs, captions: json.captions ?? [], published: json.published ?? 0 });
-      if (!res.ok) throw new Error(json.error || "The run failed.");
+      let requestId: number | null = null;
+      let previous = "";
+      for (let i = 0; i < stepCount; i++) {
+        setCurrent(i);
+        const res: Response = await fetch(`${CAPTION_APP_URL}/api/chain-run`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ chain_id: chainId, image_url: picked, publish, step_index: i, previous, request_id: requestId }),
+        });
+        const json: { error?: string; request_id?: number; outputs?: Output[]; captions?: string[]; published?: number } = await res.json().catch(() => ({ error: `The caption app answered ${res.status}.` }));
+        requestId = json.request_id ?? requestId;
+        if (json.outputs?.length) {
+          outputs.push(...json.outputs);
+          previous = json.outputs[json.outputs.length - 1].output;
+        }
+        setResult({ outputs: [...outputs], captions: json.captions ?? [], published: json.published ?? 0 });
+        if (!res.ok) throw new Error(json.error || "The run failed.");
+      }
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "The run failed.");
@@ -137,6 +142,11 @@ export default function RunPanel({ chainId, stepCount, images }: { chainId: numb
                 <p className="mt-1 whitespace-pre-line text-sm">{o.output}</p>
               </li>
             ))}
+            {busy && (
+              <li className="animate-pulse rounded-md border border-dashed border-ink/20 p-3 text-xs text-ink/50">
+                Step {runningStep} is running…
+              </li>
+            )}
           </ol>
           {result.captions.length > 0 && (
             <div className="rounded-md border border-navy/40 p-3">
