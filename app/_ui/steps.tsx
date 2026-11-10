@@ -1,10 +1,12 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { createStep, deleteStep, moveStep, updateStep, type ActionState } from "@/lib/chain-actions";
+import { createStep, deleteStep, moveStep, updateStepField, type ActionState } from "@/lib/chain-actions";
 import type { Model, Step } from "@/lib/admin";
 import { useResetOnOk } from "./forms";
 import InfoTip from "./info-tip";
+import InlineEdit from "./inline-edit";
+import DeleteButton from "./delete-button";
 
 // What each step reads and writes, shown behind the "i"
 const roleOf = (order: number, total: number) =>
@@ -29,17 +31,40 @@ function ModelSelect({ models, value }: { models: Model[]; value?: string | null
   );
 }
 
+function StepModel({ step, models }: { step: Step; models: Model[] }) {
+  const [saving, startSave] = useTransition();
+  const [err, setErr] = useState("");
+  return (
+    <span className="flex items-center gap-1">
+      <select
+        aria-label={`Model for step ${step.step_order}`}
+        title="Model for this step"
+        value={step.model_key ?? ""}
+        disabled={saving}
+        onChange={(e) =>
+          startSave(async () => {
+            const res = await updateStepField(step.chain_id, step.id, "model_key", e.target.value);
+            setErr(res?.ok ? "" : res?.message ?? "Couldn't save.");
+          })
+        }
+        className="field w-36 py-1 text-xs"
+      >
+        <option value="">Default model</option>
+        {models.map((m) => (
+          <option key={m.model_key} value={m.model_key}>
+            {m.name}
+          </option>
+        ))}
+      </select>
+      {err && <span className="text-brick">{err}</span>}
+    </span>
+  );
+}
+
 function StepCard({ step, total, models, moved, onMoved }: { step: Step; total: number; models: Model[]; moved: boolean; onMoved: (id: number) => void }) {
-  const [editing, setEditing] = useState(false);
-  const [sure, setSure] = useState(false);
-  const [state, action, pending] = useActionState<ActionState, FormData>(updateStep, null);
-  const [del, delAction, deleting] = useActionState<ActionState, FormData>(deleteStep, null);
   const [moving, startMove] = useTransition();
   const [moveErr, setMoveErr] = useState("");
   const ref = useRef<HTMLLIElement>(null);
-  useEffect(() => {
-    if (state?.ok) setEditing(false);
-  }, [state]);
   // Bring a step that just moved into view so the change is easy to follow
   useEffect(() => {
     if (moved) ref.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -54,25 +79,28 @@ function StepCard({ step, total, models, moved, onMoved }: { step: Step; total: 
       } else setMoveErr(res?.message ?? "Couldn't move it.");
     });
 
-  const modelName = models.find((m) => m.model_key === step.model_key)?.name ?? step.model_key;
-
   return (
     <li ref={ref} className={`card p-4 transition-opacity ${moving ? "opacity-50" : ""} ${moved ? "step-moved" : ""}`}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <span className="step-num flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-ink text-xs text-face">{step.step_order}</span>
-          <span className="truncate font-medium">{step.title}</span>
+          <InlineEdit
+            value={step.title}
+            label="step title"
+            textClassName="font-medium"
+            onSave={(v) => updateStepField(step.chain_id, step.id, "title", v)}
+          />
           <InfoTip text={roleOf(step.step_order, total)} />
-          {modelName && <span className="rounded-full border border-ink/20 px-2 py-0.5 text-[11px] text-ink/70">{modelName}</span>}
           {moved && <span className="rounded-full bg-navy px-2 py-0.5 text-[11px] text-face">Moved to {step.step_order}</span>}
         </div>
         <div className="flex items-center gap-1 whitespace-nowrap text-xs">
+          <StepModel step={step} models={models} />
           <button
             aria-label={`Move step ${step.step_order} up`}
             title="Move up"
             disabled={step.step_order === 1 || moving}
             onClick={() => move(step.step_order - 1)}
-            className="rounded border border-ink/20 px-2 py-1 hover:bg-panel disabled:opacity-30"
+            className="ml-1 rounded border border-ink/20 px-2 py-1 hover:bg-panel disabled:opacity-30"
           >
             ↑
           </button>
@@ -91,7 +119,7 @@ function StepCard({ step, total, models, moved, onMoved }: { step: Step; total: 
             value={step.step_order}
             disabled={moving}
             onChange={(e) => move(Number(e.target.value))}
-            className="field ml-1 w-auto py-1 text-xs"
+            className="field w-[5.5rem] py-1 text-xs"
           >
             {Array.from({ length: total }, (_, i) => (
               <option key={i} value={i + 1}>
@@ -99,60 +127,23 @@ function StepCard({ step, total, models, moved, onMoved }: { step: Step; total: 
               </option>
             ))}
           </select>
+          <span className="ml-1">
+            <DeleteButton label={`Delete step ${step.step_order}`} question="Delete this step?" action={deleteStep} fields={{ id: step.id, chain_id: step.chain_id }} />
+          </span>
         </div>
       </div>
 
-      {editing ? (
-        <form action={action} className="mt-3 grid gap-2">
-          <input type="hidden" name="id" value={step.id} />
-          <input type="hidden" name="chain_id" value={step.chain_id} />
-          <label className="grid gap-1 text-xs text-ink/60">
-            Title
-            <input name="title" defaultValue={step.title} required maxLength={80} className="field" />
-          </label>
-          <label className="grid gap-1 text-xs text-ink/60">
-            Prompt
-            <textarea name="prompt_text" defaultValue={step.prompt_text} required rows={6} className="field font-mono text-xs leading-relaxed" autoFocus />
-          </label>
-          <ModelSelect models={models} value={step.model_key} />
-          <div className="flex items-center gap-3">
-            <button disabled={pending} className="btn">
-              {pending ? "Saving…" : "Save"}
-            </button>
-            <button type="button" onClick={() => setEditing(false)} className="text-sm underline">
-              Cancel
-            </button>
-            {state && !state.ok && <p className="text-xs text-brick">{state.message}</p>}
-          </div>
-        </form>
-      ) : (
-        <>
-          <p className="mt-3 whitespace-pre-line rounded-md border border-ink/10 bg-panel p-3 font-mono text-xs leading-relaxed">{step.prompt_text}</p>
-          <div className="mt-2 flex items-center gap-3 text-xs">
-            <button onClick={() => setEditing(true)} className="text-navy underline">
-              Edit
-            </button>
-            {sure ? (
-              <form action={delAction} className="flex items-center gap-2">
-                <input type="hidden" name="id" value={step.id} />
-                <input type="hidden" name="chain_id" value={step.chain_id} />
-                <button disabled={deleting} className="text-brick underline">
-                  {deleting ? "Deleting…" : "Yes, delete"}
-                </button>
-                <button type="button" onClick={() => setSure(false)} className="underline">
-                  Keep
-                </button>
-              </form>
-            ) : (
-              <button onClick={() => setSure(true)} className="text-ink/50 underline hover:text-brick">
-                Delete
-              </button>
-            )}
-            {moveErr && <span className="text-brick">{moveErr}</span>}
-            {del && !del.ok && <span className="text-brick">{del.message}</span>}
-          </div>
-        </>
-      )}
+      <div className="mt-3 rounded-md border border-ink/10 bg-panel p-3">
+        <InlineEdit
+          value={step.prompt_text}
+          label="prompt"
+          multiline
+          textClassName="whitespace-pre-line font-mono text-xs leading-relaxed"
+          boxClassName="font-mono text-xs leading-relaxed"
+          onSave={(v) => updateStepField(step.chain_id, step.id, "prompt_text", v)}
+        />
+      </div>
+      {moveErr && <p className="mt-2 text-xs text-brick">{moveErr}</p>}
     </li>
   );
 }

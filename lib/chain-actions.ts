@@ -127,3 +127,46 @@ export async function moveStep(chainId: number, stepId: number, to: number): Pro
   revalidatePath(`/chains/${chainId}`);
   return { ok: true, message: `Moved to step ${target + 1}.` };
 }
+
+// ---------- Inline edits (one field at a time) ----------
+
+const STEP_FIELDS = ["title", "prompt_text", "model_key"] as const;
+const CHAIN_FIELDS = ["name", "description"] as const;
+
+export async function updateStepField(
+  chainId: number,
+  stepId: number,
+  field: (typeof STEP_FIELDS)[number],
+  raw: string
+): Promise<ActionState> {
+  if (!STEP_FIELDS.includes(field)) return { ok: false, message: "Unknown field." };
+  const { supabase } = await requireAdmin();
+  const value = field === "prompt_text" ? raw.trim() : clean(raw);
+  if (field !== "model_key" && !value) return { ok: false, message: field === "title" ? "The title can't be empty." : "The prompt can't be empty." };
+  const { data, error } = await supabase
+    .from("prompt_chain_steps")
+    .update({ [field]: value || null })
+    .eq("id", stepId)
+    .select("id");
+  if (error) return { ok: false, message: error.message };
+  if (!data?.length) return { ok: false, message: "Nothing was saved." };
+  revalidatePath(`/chains/${chainId}`);
+  return { ok: true, message: "Saved." };
+}
+
+export async function updateChainField(chainId: number, field: (typeof CHAIN_FIELDS)[number], raw: string): Promise<ActionState> {
+  if (!CHAIN_FIELDS.includes(field)) return { ok: false, message: "Unknown field." };
+  const { supabase } = await requireAdmin();
+  const value = clean(raw);
+  if (field === "name" && !value) return { ok: false, message: "The title can't be empty." };
+  const { data, error } = await supabase
+    .from("prompt_chains")
+    .update({ [field]: value || null })
+    .eq("id", chainId)
+    .select("id");
+  if (error) return { ok: false, message: friendly(error.message) };
+  if (!data?.length) return { ok: false, message: "Nothing was saved." };
+  revalidatePath(`/chains/${chainId}`);
+  revalidatePath("/");
+  return { ok: true, message: "Saved." };
+}
