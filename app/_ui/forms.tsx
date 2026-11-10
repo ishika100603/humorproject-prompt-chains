@@ -30,7 +30,7 @@ export function ChainHeader({ id, name, description }: { id: number; name: strin
     <div className="card flex flex-wrap items-start justify-between gap-4 p-5">
       <div className="grid min-w-0 flex-1 gap-1">
         <p className="text-[11px] uppercase tracking-wide text-ink/50">Prompt chain</p>
-        <InlineEdit value={name} label="title" textClassName="text-2xl font-medium" boxClassName="text-lg" onSave={(v) => updateChainField(id, "name", v)} />
+        <InlineEdit value={name} label="title" textClassName="text-2xl font-medium" boxClassName="text-xl font-medium" onSave={(v) => updateChainField(id, "name", v)} />
         <InlineEdit
           value={description ?? ""}
           label="description"

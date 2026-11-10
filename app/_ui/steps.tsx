@@ -88,6 +88,7 @@ function StepCard({ step, total, models, moved, onMoved }: { step: Step; total: 
             value={step.title}
             label="step title"
             textClassName="font-medium"
+            boxClassName="font-medium"
             onSave={(v) => updateStepField(step.chain_id, step.id, "title", v)}
           />
           <InfoTip text={roleOf(step.step_order, total)} />

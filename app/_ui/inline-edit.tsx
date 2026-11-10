@@ -36,8 +36,10 @@ export default function InlineEdit({
 
   useEffect(() => {
     if (editing) {
-      ref.current?.focus();
-      ref.current?.select();
+      const el = ref.current;
+      el?.focus();
+      // Cursor at the end instead of highlighting everything
+      if (el) el.setSelectionRange(el.value.length, el.value.length);
     }
   }, [editing]);
 
@@ -82,31 +84,48 @@ export default function InlineEdit({
       </span>
     );
 
+  const cancel = () => {
+    setDraft(value);
+    setError("");
+    setEditing(false);
+  };
+  const box = `w-full rounded-md border border-navy/50 bg-face px-2 py-1 outline-none focus:border-navy focus:ring-2 focus:ring-navy/15 ${boxClassName}`;
+
   return (
-    <span className="grid w-full gap-1.5">
-      {multiline ? (
-        <textarea ref={ref} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={keys} rows={5} aria-label={label} className={`field ${boxClassName}`} />
-      ) : (
-        <input ref={ref} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={keys} aria-label={label} placeholder={placeholder} className={`field ${boxClassName}`} />
-      )}
-      <span className="flex items-center gap-3 text-xs">
-        <button type="button" onClick={save} disabled={saving} className="rounded-md bg-ink px-3 py-1 text-face disabled:opacity-50">
-          {saving ? "Saving…" : "Save"}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setDraft(value);
-            setError("");
-            setEditing(false);
-          }}
-          className="underline"
-        >
-          Cancel
-        </button>
-        <span className="text-ink/50">{multiline ? "Ctrl+Enter to save" : "Enter to save"} · Esc to cancel</span>
-        {error && <span className="text-brick">{error}</span>}
+    <span className="grid w-full min-w-0 flex-1 gap-1">
+      <span className={`flex w-full gap-1.5 ${multiline ? "items-start" : "items-center"}`}>
+        {multiline ? (
+          <textarea ref={ref} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={keys} rows={5} aria-label={label} className={box} />
+        ) : (
+          <input ref={ref} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={keys} aria-label={label} placeholder={placeholder} className={box} />
+        )}
+        <span className={`flex shrink-0 gap-1 ${multiline ? "flex-col" : ""}`}>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            aria-label="Save"
+            title={multiline ? "Save (Ctrl+Enter)" : "Save (Enter)"}
+            className="flex h-7 w-7 items-center justify-center rounded-md bg-ink text-face hover:opacity-85 disabled:opacity-50"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12.5l4.5 4.5L19 7.5" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={cancel}
+            aria-label="Cancel"
+            title="Cancel (Esc)"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-ink/20 text-ink/60 hover:bg-panel hover:text-ink"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+        </span>
       </span>
+      {error && <span className="text-xs text-brick">{error}</span>}
     </span>
   );
 }
