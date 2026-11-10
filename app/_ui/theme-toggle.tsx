@@ -64,7 +64,6 @@ export default function ThemeToggle() {
           </svg>
           <span className="hidden sm:inline">
             {label}
-            {value === "system" && <span className="opacity-70"> ({osDark ? "dark" : "light"})</span>}
           </span>
         </button>
       ))}

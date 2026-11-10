@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
-import { signOut } from "../actions";
+import AccountMenu from "../_ui/account-menu";
 import ThemeToggle from "../_ui/theme-toggle";
 
 export default async function ToolLayout({ children }: LayoutProps<"/">) {
@@ -15,12 +15,7 @@ export default async function ToolLayout({ children }: LayoutProps<"/">) {
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <span className="hidden max-w-48 truncate text-xs text-ink/60 md:inline" title={user.email ?? ""}>
-              {user.email}
-            </span>
-            <form action={signOut}>
-              <button className="text-xs underline">Sign out</button>
-            </form>
+            <AccountMenu email={user.email ?? ""} />
           </div>
         </div>
       </header>

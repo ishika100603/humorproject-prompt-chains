@@ -38,7 +38,7 @@ export async function updateChain(_prev: ActionState, form: FormData): Promise<A
   if (!data?.length) return { ok: false, message: "Nothing was saved." };
   revalidatePath(`/chains/${id}`);
   revalidatePath("/");
-  return { ok: true, message: "Saved." };
+  return { ok: true, message: "Title changed." };
 }
 
 export async function deleteChain(_prev: ActionState, form: FormData): Promise<ActionState> {
@@ -67,7 +67,8 @@ export async function createStep(_prev: ActionState, form: FormData): Promise<Ac
   if (!title || !prompt_text) return { ok: false, message: "A step needs a title and a prompt." };
   const steps = await stepsOf(supabase, chainId);
   const step_order = (steps.at(-1)?.step_order ?? 0) + 1;
-  const { error } = await supabase.from("prompt_chain_steps").insert({ chain_id: chainId, step_order, title, prompt_text });
+  const model_key = String(form.get("model_key") ?? "").trim() || null;
+  const { error } = await supabase.from("prompt_chain_steps").insert({ chain_id: chainId, step_order, title, prompt_text, model_key });
   if (error) return { ok: false, message: error.message };
   revalidatePath(`/chains/${chainId}`);
   return { ok: true, message: `Added as step ${step_order}.` };
@@ -80,7 +81,8 @@ export async function updateStep(_prev: ActionState, form: FormData): Promise<Ac
   const title = clean(form.get("title"));
   const prompt_text = String(form.get("prompt_text") ?? "").trim();
   if (!title || !prompt_text) return { ok: false, message: "A step needs a title and a prompt." };
-  const { data, error } = await supabase.from("prompt_chain_steps").update({ title, prompt_text }).eq("id", id).select("id");
+  const model_key = String(form.get("model_key") ?? "").trim() || null;
+  const { data, error } = await supabase.from("prompt_chain_steps").update({ title, prompt_text, model_key }).eq("id", id).select("id");
   if (error) return { ok: false, message: error.message };
   if (!data?.length) return { ok: false, message: "Nothing was saved." };
   revalidatePath(`/chains/${chainId}`);

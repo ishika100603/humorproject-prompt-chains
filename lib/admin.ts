@@ -18,4 +18,5 @@ export const fmtDate = (iso: string) =>
   new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
 
 export type Chain = { id: number; name: string; description: string | null; created_at: string };
-export type Step = { id: number; chain_id: number; step_order: number; title: string; prompt_text: string };
+export type Step = { id: number; chain_id: number; step_order: number; title: string; prompt_text: string; model_key: string | null };
+export type Model = { model_key: string; name: string };

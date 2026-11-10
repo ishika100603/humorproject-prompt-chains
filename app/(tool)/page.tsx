@@ -1,8 +1,26 @@
 import Link from "next/link";
-import { fmtDate, requireAdmin, type Chain } from "@/lib/admin";
+import { requireAdmin, type Chain } from "@/lib/admin";
 import { NewChainForm } from "../_ui/forms";
 
 export const metadata = { title: "Prompt chains" };
+
+const ICONS = {
+  steps: "M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01",
+  runs: "M6 4l14 8-14 8V4z",
+  captions: "M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z",
+};
+
+function Stat({ icon, value, label }: { icon: keyof typeof ICONS; value: number; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5 rounded-full border border-ink/15 bg-panel px-2.5 py-1 text-xs" title={`${value} ${label}`}>
+      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-navy" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d={ICONS[icon]} />
+      </svg>
+      <span className="font-medium tabular-nums">{value}</span>
+      <span className="text-ink/50">{label}</span>
+    </span>
+  );
+}
 
 export default async function Home({ searchParams }: PageProps<"/">) {
   const { deleted } = await searchParams;
@@ -20,9 +38,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     <div className="grid gap-6">
       <div>
         <h1 className="text-2xl font-medium">Prompt chains</h1>
-        <p className="mt-1 text-sm text-ink/60">
-          A chain is a series of AI steps. Step 1 looks at a photo, and each next step works on what the previous one wrote. The last step writes the captions.
-        </p>
+        <p className="mt-1 text-sm text-ink/60">Steps run in order. Step 1 sees the photo; the last step writes the captions.</p>
         {deleted && <p className="mt-2 text-sm text-navy">Chain deleted.</p>}
         {c.error && <p className="mt-2 text-sm text-brick">{c.error.message}</p>}
       </div>
@@ -30,21 +46,20 @@ export default async function Home({ searchParams }: PageProps<"/">) {
       <NewChainForm />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {chains.map((ch) => {
-          const steps = count(s.data as { chain_id: number }[], ch.id);
-          const runs = count(r.data as { chain_id: number }[], ch.id);
-          const captions = count(cap.data as { chain_id: number }[], ch.id);
-          return (
-            <Link key={ch.id} href={`/chains/${ch.id}`} className="card block p-4 hover:border-navy">
+        {chains.map((ch) => (
+          <Link key={ch.id} href={`/chains/${ch.id}`} className="card flex flex-col gap-3 p-4 transition-colors hover:border-navy">
+            <div>
               <p className="font-medium">{ch.name}</p>
-              <p className="mt-1 line-clamp-2 min-h-10 text-sm text-ink/60">{ch.description || "No description"}</p>
-              <p className="mt-3 text-xs text-ink/50">
-                {steps} step{steps === 1 ? "" : "s"} · {runs} run{runs === 1 ? "" : "s"} · {captions} caption{captions === 1 ? "" : "s"} in the app · made {fmtDate(ch.created_at)}
-              </p>
-            </Link>
-          );
-        })}
-        {!chains.length && <p className="text-sm text-ink/50">No chains yet. Create the first one above.</p>}
+              {ch.description && <p className="mt-1 line-clamp-2 text-sm text-ink/60">{ch.description}</p>}
+            </div>
+            <div className="mt-auto flex flex-wrap gap-1.5">
+              <Stat icon="steps" value={count(s.data as { chain_id: number }[], ch.id)} label="steps" />
+              <Stat icon="runs" value={count(r.data as { chain_id: number }[], ch.id)} label="runs" />
+              <Stat icon="captions" value={count(cap.data as { chain_id: number }[], ch.id)} label="posted" />
+            </div>
+          </Link>
+        ))}
+        {!chains.length && <p className="text-sm text-ink/50">No chains yet.</p>}
       </div>
     </div>
   );

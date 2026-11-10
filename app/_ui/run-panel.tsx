@@ -89,12 +89,20 @@ export default function RunPanel({ chainId, stepCount, images }: { chainId: numb
 
   return (
     <section className="card grid gap-4 p-4">
-      <div>
-        <h2 className="font-medium">Generate captions with this chain</h2>
-        <p className="text-xs text-ink/60">Pick a photo and run every step in order. Each step&apos;s output is shown, and saved under Generated media.</p>
-      </div>
+      <h2 className="font-medium">Generate captions</h2>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      {/* The chosen photo, large, so it's clear what the chain will run on */}
+      {picked ? (
+        <div className="relative overflow-hidden rounded-md border-2 border-navy bg-panel">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={picked} alt="Selected photo" className="max-h-56 w-full object-contain" />
+          <span className="absolute left-2 top-2 rounded-full bg-navy px-2 py-0.5 text-[11px] text-face">Selected photo</span>
+        </div>
+      ) : (
+        <p className="rounded-md border-2 border-dashed border-ink/25 p-6 text-center text-sm text-ink/60">Pick a photo below</p>
+      )}
+
+      <div className="flex gap-3 overflow-x-auto px-1 pb-2 pt-1">
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
@@ -111,10 +119,17 @@ export default function RunPanel({ chainId, stepCount, images }: { chainId: numb
             onClick={() => setPicked(img.url)}
             aria-pressed={picked === img.url}
             title={img.description ?? ""}
-            className={`h-20 w-20 shrink-0 overflow-hidden rounded-md border-2 ${picked === img.url ? "border-navy" : "border-transparent opacity-80 hover:opacity-100"}`}
+            className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-md transition ${
+              picked === img.url ? "ring-4 ring-navy ring-offset-2 ring-offset-face" : "opacity-60 hover:opacity-100"
+            }`}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={img.url} alt={img.description ?? "Photo"} className="h-full w-full object-cover" loading="lazy" />
+            {picked === img.url && (
+              <span className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-navy text-[11px] text-face" aria-hidden="true">
+                ✓
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -125,7 +140,7 @@ export default function RunPanel({ chainId, stepCount, images }: { chainId: numb
         </button>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={publish} onChange={(e) => setPublish(e.target.checked)} className="h-4 w-4 accent-[var(--navy)]" />
-          Also post the captions to the public app
+          Post to the public app
         </label>
         {!stepCount && <span className="text-xs text-ink/50">Add a step first.</span>}
       </div>

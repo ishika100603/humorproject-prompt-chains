@@ -82,3 +82,38 @@ body {
 .btn:disabled {
   opacity: 0.5;
 }
+
+/* Dropdowns and buttons use the page font, not the browser's */
+button,
+select,
+input,
+textarea {
+  font-family: inherit;
+}
+
+/* A step that just moved slides in and glows, so the swap is visible */
+@keyframes step-moved {
+  0% {
+    transform: translateY(-10px) scale(0.98);
+    box-shadow: 0 0 0 3px var(--navy);
+  }
+  40% {
+    transform: translateY(0) scale(1.01);
+  }
+  100% {
+    transform: none;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.step-moved {
+  animation: step-moved 1.4s ease-out;
+  border-color: var(--navy);
+}
+.step-moved .step-num {
+  background: var(--navy);
+}
+@media (prefers-reduced-motion: reduce) {
+  .step-moved {
+    animation: none;
+  }
+}

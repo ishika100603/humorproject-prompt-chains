@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { fmtDate } from "@/lib/admin";
-import { ChainHeader } from "@/app/_ui/forms";
 import Tabs from "@/app/_ui/tabs";
 import { loadChain } from "../load";
 
@@ -35,12 +34,14 @@ export default async function MediaPage({ params }: PageProps<"/chains/[id]/medi
       <Link href="/" className="text-sm underline">
         ← All chains
       </Link>
-      <ChainHeader id={chain.id} name={chain.name} description={chain.description} />
+      <div className="card p-5">
+        <p className="text-[11px] uppercase tracking-wide text-ink/50">Prompt chain</p>
+        <h1 className="mt-0.5 text-2xl font-medium">{chain.name}</h1>
+      </div>
       <Tabs id={chain.id} active="media" runs={runCount} />
 
       <section className="grid gap-3">
         <h2 className="font-medium">Runs</h2>
-        <p className="-mt-2 text-xs text-ink/60">Every time this chain ran, here or in the public app, with the captions its last step wrote.</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {runs.map((run) => {
             const ok = resp.filter((x) => x.request_id === run.id && x.http_status === 200);
@@ -93,7 +94,6 @@ export default async function MediaPage({ params }: PageProps<"/chains/[id]/medi
 
       <section className="grid gap-3">
         <h2 className="font-medium">Captions in the public app</h2>
-        <p className="-mt-2 text-xs text-ink/60">Captions this chain wrote that are live in At 116 &amp; Broadway.</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {captions.map((cap) => (
             <div key={cap.id} className="card flex gap-3 p-2">
