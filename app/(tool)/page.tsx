@@ -17,7 +17,7 @@ function Stat({ icon, value, label }: { icon: keyof typeof ICONS; value: number;
         <path d={ICONS[icon]} />
       </svg>
       <span className="font-medium tabular-nums">{value}</span>
-      <span className="text-ink/50">{label}</span>
+      <span className="text-ink/50">{value === 1 ? label.replace(/s$/, "") : label}</span>
     </span>
   );
 }

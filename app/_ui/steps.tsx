@@ -166,7 +166,7 @@ function AddStep({ chainId, next, models }: { chainId: number; next: number; mod
       <input type="hidden" name="chain_id" value={chainId} />
       <label className="grid gap-1 text-xs text-ink/60">
         Title
-        <input name="title" required maxLength={80} placeholder={next === 1 ? "Describe the photo" : "Find the funny angle"} className="field" />
+        <input name="title" required maxLength={80} placeholder={next === 1 ? "e.g. Describe the photo" : "e.g. Find the funny angle"} className="field" />
       </label>
       <label className="grid gap-1 text-xs text-ink/60">
         Prompt
@@ -174,7 +174,7 @@ function AddStep({ chainId, next, models }: { chainId: number; next: number; mod
           name="prompt_text"
           required
           rows={4}
-          placeholder={next === 1 ? "Describe what's happening in the photo in 2 sentences." : "Using that, find the most relatable angle for a Columbia student."}
+          placeholder={next === 1 ? "e.g. Describe what's happening in the photo in 2 sentences." : "e.g. Using that, find the most relatable angle for a Columbia student."}
           className="field font-mono text-xs leading-relaxed"
         />
       </label>

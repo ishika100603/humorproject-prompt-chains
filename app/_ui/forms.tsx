@@ -9,11 +9,11 @@ export function NewChainForm() {
     <form action={action} className="card grid gap-3 p-4 md:grid-cols-[1fr_2fr_auto] md:items-end">
       <label className="grid gap-1 text-xs text-ink/60">
         Title
-        <input name="name" required maxLength={80} placeholder="Describe, then joke" className="field" />
+        <input name="name" required maxLength={80} placeholder="e.g. Describe, then joke" className="field" />
       </label>
       <label className="grid gap-1 text-xs text-ink/60">
         Description (optional)
-        <input name="description" maxLength={300} placeholder="Describe, find the angle, write captions" className="field" />
+        <input name="description" maxLength={300} placeholder="e.g. Describe, find the angle, write captions" className="field" />
       </label>
       <button disabled={pending} className="btn h-9">
         {pending ? "Creating…" : "Create chain"}
