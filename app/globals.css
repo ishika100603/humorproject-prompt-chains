@@ -42,6 +42,16 @@ body {
   background-color: var(--tile);
   font-family: var(--font-sans);
   font-weight: 300;
+  /* No blinking text cursor on plain text (shows up when caret browsing is on) */
+  caret-color: transparent;
+}
+
+/* Typing boxes keep their cursor */
+input,
+textarea,
+select,
+[contenteditable="true"] {
+  caret-color: var(--ink);
 }
 
 .hand {
