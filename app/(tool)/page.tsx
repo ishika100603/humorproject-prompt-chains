@@ -38,7 +38,12 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     <div className="grid gap-6">
       <div>
         <h1 className="text-2xl font-medium">Prompt chains</h1>
-        <p className="mt-1 text-sm text-ink/60">Steps run in order. Step 1 sees the photo; the last step writes the captions.</p>
+        <ul className="mt-2 grid list-disc gap-0.5 pl-5 text-sm text-ink/60">
+          <li>A chain is a list of steps that turn a photo into captions.</li>
+          <li>Step 1 looks at the photo.</li>
+          <li>Each next step builds on what the step before it wrote.</li>
+          <li>The last step writes the captions.</li>
+        </ul>
         {deleted && <p className="mt-2 text-sm text-navy">Chain deleted.</p>}
         {c.error && <p className="mt-2 text-sm text-brick">{c.error.message}</p>}
       </div>
